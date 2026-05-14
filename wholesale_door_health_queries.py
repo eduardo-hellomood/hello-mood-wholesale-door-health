@@ -26,7 +26,7 @@ def get_client() -> bigquery.Client:
     return bigquery.Client(project=_PROJECT)
 
 
-def door_health_summary(client: bigquery.Client) -> dict[str, int]:
+def door_health_summary(client: bigquery.Client, as_of: str) -> dict[str, int]:
     q = f"""
     WITH latest AS (
       SELECT
@@ -34,13 +34,14 @@ def door_health_summary(client: bigquery.Client) -> dict[str, int]:
         MAX(door_latest_order_dt) AS last_order_dt
       FROM {_TABLE}
       WHERE location_type = 'Smoke & Vape'
+        AND DATE(door_latest_order_dt) <= '{as_of}'
       GROUP BY 1
     )
     SELECT
       CASE
-        WHEN DATE_DIFF(CURRENT_DATE('America/Chicago'), DATE(last_order_dt), DAY) <= 30 THEN 'Active'
-        WHEN DATE_DIFF(CURRENT_DATE('America/Chicago'), DATE(last_order_dt), DAY) <= 60 THEN 'At Risk'
-        WHEN DATE_DIFF(CURRENT_DATE('America/Chicago'), DATE(last_order_dt), DAY) <= 90 THEN 'Churned'
+        WHEN DATE_DIFF(DATE '{as_of}', DATE(last_order_dt), DAY) <= 30 THEN 'Active'
+        WHEN DATE_DIFF(DATE '{as_of}', DATE(last_order_dt), DAY) <= 60 THEN 'At Risk'
+        WHEN DATE_DIFF(DATE '{as_of}', DATE(last_order_dt), DAY) <= 90 THEN 'Churned'
         ELSE 'Lost'
       END AS status,
       COUNT(*) AS doors
@@ -80,7 +81,7 @@ def monthly_trend(client: bigquery.Client) -> pd.DataFrame:
     return client.query(q).to_dataframe()
 
 
-def door_detail(client: bigquery.Client) -> pd.DataFrame:
+def door_detail(client: bigquery.Client, as_of: str) -> pd.DataFrame:
     q = f"""
     WITH door_latest AS (
       SELECT
@@ -89,13 +90,14 @@ def door_detail(client: bigquery.Client) -> pd.DataFrame:
         location_address_province   AS state,
         imputed_owner_name          AS rep,
         DATE(door_latest_order_dt)  AS last_order_date,
-        DATE_DIFF(CURRENT_DATE('America/Chicago'), DATE(door_latest_order_dt), DAY) AS days_since_order,
+        DATE_DIFF(DATE '{as_of}', DATE(door_latest_order_dt), DAY) AS days_since_order,
         ROW_NUMBER() OVER (
           PARTITION BY disambiguated_location_name
           ORDER BY door_latest_order_dt DESC
         ) AS rn
       FROM {_TABLE}
       WHERE location_type = 'Smoke & Vape'
+        AND DATE(door_latest_order_dt) <= '{as_of}'
     ),
     door_spend AS (
       SELECT
@@ -103,7 +105,7 @@ def door_detail(client: bigquery.Client) -> pd.DataFrame:
         ROUND(SUM(line_net_total), 2) AS monthly_spend
       FROM {_TABLE}
       WHERE location_type = 'Smoke & Vape'
-        AND DATE(created_at_cst) >= DATE_SUB(CURRENT_DATE('America/Chicago'), INTERVAL 30 DAY)
+        AND DATE(created_at_cst) BETWEEN DATE_SUB(DATE '{as_of}', INTERVAL 30 DAY) AND DATE '{as_of}'
       GROUP BY 1
     )
     SELECT

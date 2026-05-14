@@ -4,7 +4,7 @@ from datetime import date
 
 import pandas as pd
 import streamlit as st
-from streamlit_echarts import st_echarts
+from streamlit_echarts import JsCode, st_echarts
 
 import wholesale_door_health_queries as queries
 
@@ -49,8 +49,8 @@ def _client():
 
 
 @st.cache_data(ttl=1800)
-def _summary() -> dict[str, int]:
-    return queries.door_health_summary(_client())
+def _summary(as_of: str) -> dict[str, int]:
+    return queries.door_health_summary(_client(), as_of)
 
 
 @st.cache_data(ttl=1800)
@@ -59,9 +59,20 @@ def _trend() -> pd.DataFrame:
 
 
 @st.cache_data(ttl=1800)
-def _detail() -> pd.DataFrame:
-    return queries.door_detail(_client())
+def _detail(as_of: str) -> pd.DataFrame:
+    return queries.door_detail(_client(), as_of)
 
+
+# ─── Sidebar ──────────────────────────────────────────────────────────────────
+
+with st.sidebar:
+    st.markdown("### Filters")
+    as_of_date = st.date_input(
+        "As of date",
+        value=date.today(),
+        max_value=date.today(),
+    )
+    as_of = as_of_date.strftime("%Y-%m-%d")
 
 # ─── Header ───────────────────────────────────────────────────────────────────
 
@@ -76,7 +87,7 @@ with col_title:
 with col_meta:
     st.markdown(
         f"<div style='text-align:right;color:#6b7280;font-size:13px;padding-top:22px'>"
-        f"As of {date.today().strftime('%B %d, %Y')}</div>",
+        f"As of {as_of_date.strftime('%B %d, %Y')}</div>",
         unsafe_allow_html=True,
     )
 
@@ -84,7 +95,7 @@ st.markdown("<hr style='margin:8px 0 20px;border-color:#e5e7eb'>", unsafe_allow_
 
 # ─── KPI cards ────────────────────────────────────────────────────────────────
 
-summary = _summary()
+summary = _summary(as_of)
 total = sum(summary.values()) or 1
 
 kpi_cols = st.columns(4)
@@ -155,7 +166,8 @@ with chart_r:
                 "type": "pie",
                 "radius": ["42%", "68%"],
                 "center": ["38%", "50%"],
-                "label": {"show": True, "position": "inside", "formatter": "{c}\n({d}%)", "fontSize": 11, "fontWeight": "bold", "color": "#fff"},
+                "label": {"show": True, "position": "inside", "fontSize": 9, "fontWeight": "bold", "color": "#fff",
+                           "formatter": JsCode("function(p){return p.value+'\\n('+p.percent.toFixed(1)+'%)'}")},
                 "emphasis": {"itemStyle": {"shadowBlur": 8, "shadowColor": "rgba(0,0,0,0.15)"}},
                 "data": [
                     {"name": f"{s} ({['≤30d','31-60d','61-90d','90+d'][i]})",
@@ -170,7 +182,7 @@ with chart_r:
 
 # ─── Door detail table ────────────────────────────────────────────────────────
 
-detail = _detail()
+detail = _detail(as_of)
 
 st.markdown(
     f"<div style='font-size:16px;font-weight:700;margin-bottom:10px'>"
