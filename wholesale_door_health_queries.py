@@ -66,7 +66,7 @@ def monthly_trend(client: bigquery.Client) -> pd.DataFrame:
       FROM {_TABLE}
       WHERE company_location_id IS NOT NULL
         AND created_at_cst >= DATE_TRUNC(
-              DATE_SUB(CURRENT_DATE('America/Chicago'), INTERVAL 5 MONTH), MONTH)
+              DATE_SUB(CURRENT_DATE('America/New_York'), INTERVAL 5 MONTH), MONTH)
       GROUP BY 1, 2
     )
     SELECT
