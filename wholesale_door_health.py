@@ -159,13 +159,13 @@ with chart_r:
         options={
             "tooltip": {"trigger": "item", "formatter": "{b}: {c} ({d}%)"},
             "legend": {
-                "orient": "vertical", "right": "2%", "top": "center",
+                "orient": "horizontal", "bottom": 0, "left": "center",
                 "itemHeight": 10, "textStyle": {"fontSize": 11},
             },
             "series": [{
                 "type": "pie",
-                "radius": ["42%", "68%"],
-                "center": ["38%", "50%"],
+                "radius": ["42%", "65%"],
+                "center": ["50%", "45%"],
                 "label": {"show": True, "position": "inside", "fontSize": 9, "fontWeight": "bold", "color": "#fff",
                            "formatter": JsCode("function(p){return p.value+'\\n('+p.percent.toFixed(1)+'%)'}")},
                 "emphasis": {"itemStyle": {"shadowBlur": 8, "shadowColor": "rgba(0,0,0,0.15)"}},
