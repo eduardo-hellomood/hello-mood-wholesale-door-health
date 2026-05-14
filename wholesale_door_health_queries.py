@@ -56,16 +56,16 @@ def monthly_trend(client: bigquery.Client) -> pd.DataFrame:
     q = f"""
     WITH monthly AS (
       SELECT
-        DATE_TRUNC(DATE(created_at_cst), MONTH) AS month_date,
-        FORMAT_DATE('%b %Y', DATE_TRUNC(DATE(created_at_cst), MONTH)) AS month_label,
+        DATE_TRUNC(DATE(created_at_et), MONTH) AS month_date,
+        FORMAT_DATE('%b %Y', DATE_TRUNC(DATE(created_at_et), MONTH)) AS month_label,
         COUNT(DISTINCT company_location_id) AS active_doors,
         COUNT(DISTINCT IF(
-          DATE_TRUNC(DATE(door_first_order_created_at_cst), MONTH) = DATE_TRUNC(DATE(created_at_cst), MONTH),
+          DATE_TRUNC(DATE(door_first_order_created_at_et), MONTH) = DATE_TRUNC(DATE(created_at_et), MONTH),
           company_location_id, NULL
         )) AS new_doors
       FROM {_TABLE}
       WHERE company_location_id IS NOT NULL
-        AND created_at_cst >= DATE_TRUNC(
+        AND created_at_et >= DATE_TRUNC(
               DATE_SUB(CURRENT_DATE('America/New_York'), INTERVAL 5 MONTH), MONTH)
       GROUP BY 1, 2
     )
@@ -104,8 +104,8 @@ def door_detail(client: bigquery.Client, as_of: str) -> pd.DataFrame:
     door_spend AS (
       SELECT
         company_location_id,
-        ROUND(SUM(IF(DATE(created_at_cst) BETWEEN DATE_SUB(DATE '{as_of}', INTERVAL 90 DAY) AND DATE '{as_of}', line_net_total, 0)), 2) AS spend_30d,
-        ROUND(SUM(IF(DATE(created_at_cst) <= DATE '{as_of}', line_net_total, 0)), 2) AS spend_total
+        ROUND(SUM(IF(DATE(created_at_et) BETWEEN DATE_SUB(DATE '{as_of}', INTERVAL 90 DAY) AND DATE '{as_of}', line_net_total, 0)), 2) AS spend_30d,
+        ROUND(SUM(IF(DATE(created_at_et) <= DATE '{as_of}', line_net_total, 0)), 2) AS spend_total
       FROM {_TABLE}
       WHERE company_location_id IS NOT NULL
       GROUP BY 1
