@@ -86,6 +86,7 @@ def door_detail(client: bigquery.Client, as_of: str) -> pd.DataFrame:
     WITH door_latest AS (
       SELECT
         company_location_id,
+        company_name                AS company,
         location_name               AS door_name,
         location_address_city       AS city,
         location_address_province   AS state,

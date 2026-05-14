@@ -48,7 +48,7 @@ def _client():
     return queries.get_client()
 
 
-_V = "v5"  # bump to bust cache after query changes
+_V = "v6"  # bump to bust cache after query changes
 
 @st.cache_data(ttl=1800)
 def _summary(as_of: str, _v: str = _V) -> dict[str, int]:
@@ -227,6 +227,7 @@ def _city_state(row: pd.Series) -> str:
     return f"{city}, {abbr}" if city else abbr
 
 display = pd.DataFrame({
+    "Company":          df["company"].fillna(""),
     "Door Name":        df["door_name"],
     "City / State":     df.apply(_city_state, axis=1),
     "Rep":              df["rep"].fillna(""),
