@@ -227,7 +227,7 @@ def _city_state(row: pd.Series) -> str:
     return f"{city}, {abbr}" if city else abbr
 
 display = pd.DataFrame({
-    "Company":          df["company"].fillna(""),
+    "Company Name":     df["company"].fillna(""),
     "Door Name":        df["door_name"],
     "City / State":     df.apply(_city_state, axis=1),
     "Rep":              df["rep"].fillna(""),
