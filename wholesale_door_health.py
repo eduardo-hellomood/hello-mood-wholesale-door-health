@@ -214,45 +214,39 @@ if region_sel != "All Regions":
 if search:
     df = df[df["door_name"].str.contains(search, case=False, na=False)]
 
-
-def _days_color(d: int) -> str:
-    if d <= 30:  return "#16a34a"
-    if d <= 60:  return "#d97706"
-    if d <= 90:  return "#dc2626"
-    return "#6b7280"
-
-
-rows_html = ""
-for _, row in df.iterrows():
+# Build display dataframe
+def _city_state(row: pd.Series) -> str:
     abbr = _US_STATES.get(row["state"], row["state"][:2].upper() if pd.notna(row["state"]) else "")
     city = row["city"] if pd.notna(row["city"]) else ""
-    city_state = f"{city}, {abbr}" if city else abbr
-    last_date = pd.to_datetime(row["last_order_date"]).strftime("%b %d, %Y") if pd.notna(row["last_order_date"]) else "—"
-    days = int(row["days_since_order"])
-    spend = f"${row['monthly_spend']:,.0f}" if row["monthly_spend"] > 0 else "$0"
-    dc = _days_color(days)
-    tc = _TEXT_COLOR.get(row["status"], "#374151")
-    rows_html += (
-        f"<tr style='border-bottom:1px solid #f3f4f6'>"
-        f"<td style='padding:10px 12px;font-weight:600'>{row['door_name']}</td>"
-        f"<td style='padding:10px 12px;color:#6b7280'>{city_state}</td>"
-        f"<td style='padding:10px 12px'>{row.get('rep', '') or ''}</td>"
-        f"<td style='padding:10px 12px'>{last_date}</td>"
-        f"<td style='padding:10px 12px;color:{dc};font-weight:500'>{days} days</td>"
-        f"<td style='padding:10px 12px;color:{tc};font-weight:600'>{row['status']}</td>"
-        f"<td style='padding:10px 12px'>{spend}</td>"
-        f"</tr>"
-    )
+    return f"{city}, {abbr}" if city else abbr
 
-st.markdown(
-    "<table style='width:100%;border-collapse:collapse;font-size:13px;margin-top:4px'>"
-    "<thead><tr style='border-bottom:2px solid #e5e7eb'>"
-    + "".join(
-        f"<th style='text-align:left;padding:8px 12px;font-size:11px;color:#6b7280;"
-        f"text-transform:uppercase;letter-spacing:0.5px;font-weight:600'>{h}</th>"
-        for h in ["Door Name", "City / State", "Rep", "Last Order Date",
-                  "Days Since Order", "Status", "Monthly Spend"]
-    )
-    + f"</tr></thead><tbody>{rows_html}</tbody></table>",
-    unsafe_allow_html=True,
+display = pd.DataFrame({
+    "Door Name":        df["door_name"],
+    "City / State":     df.apply(_city_state, axis=1),
+    "Rep":              df["rep"].fillna(""),
+    "Last Order":       pd.to_datetime(df["last_order_date"]),
+    "Days Since Order": df["days_since_order"].astype(int),
+    "Status":           df["status"],
+    "Monthly Spend":    df["monthly_spend"],
+})
+
+_STATUS_BG = {"Active": "#dcfce7", "At Risk": "#fef3c7", "Churned": "#fee2e2", "Lost": "#f3f4f6"}
+_DAYS_BG   = lambda d: "#dcfce7" if d <= 30 else "#fef3c7" if d <= 60 else "#fee2e2" if d <= 90 else "#f3f4f6"
+
+def _style(df: pd.DataFrame) -> pd.DataFrame:
+    styles = pd.DataFrame("", index=df.index, columns=df.columns)
+    styles["Status"]           = df["Status"].map(lambda s: f"background-color:{_STATUS_BG.get(s,'')};font-weight:600")
+    styles["Days Since Order"] = df["Days Since Order"].map(lambda d: f"background-color:{_DAYS_BG(d)};font-weight:500")
+    return styles
+
+st.dataframe(
+    display.style.apply(_style, axis=None),
+    use_container_width=True,
+    hide_index=True,
+    column_config={
+        "Last Order":       st.column_config.DateColumn("Last Order", format="MMM DD, YYYY"),
+        "Monthly Spend":    st.column_config.NumberColumn("Monthly Spend", format="$%,.0f"),
+        "Days Since Order": st.column_config.NumberColumn("Days Since Order"),
+    },
+    height=500,
 )
