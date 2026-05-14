@@ -48,18 +48,20 @@ def _client():
     return queries.get_client()
 
 
+_V = "v3"  # bump to bust cache after query changes
+
 @st.cache_data(ttl=1800)
-def _summary(as_of: str) -> dict[str, int]:
+def _summary(as_of: str, _v: str = _V) -> dict[str, int]:
     return queries.door_health_summary(_client(), as_of)
 
 
 @st.cache_data(ttl=1800)
-def _trend() -> pd.DataFrame:
+def _trend(_v: str = _V) -> pd.DataFrame:
     return queries.monthly_trend(_client())
 
 
 @st.cache_data(ttl=1800)
-def _detail(as_of: str) -> pd.DataFrame:
+def _detail(as_of: str, _v: str = _V) -> pd.DataFrame:
     return queries.door_detail(_client(), as_of)
 
 
@@ -67,6 +69,10 @@ def _detail(as_of: str) -> pd.DataFrame:
 
 with st.sidebar:
     st.markdown("### Filters")
+    if st.button("🔄 Refresh data"):
+        st.cache_data.clear()
+        st.cache_resource.clear()
+        st.rerun()
     as_of_date = st.date_input(
         "As of date",
         value=date.today(),
