@@ -48,20 +48,20 @@ def _client():
     return queries.get_client()
 
 
-_V = "v6"  # bump to bust cache after query changes
+_V = "v7"  # bump to bust cache after query changes
 
 @st.cache_data(ttl=1800)
-def _summary(as_of: str, _v: str = _V) -> dict[str, int]:
+def _summary(as_of: str, v: str = _V) -> dict[str, int]:
     return queries.door_health_summary(_client(), as_of)
 
 
 @st.cache_data(ttl=1800)
-def _trend(_v: str = _V) -> pd.DataFrame:
+def _trend(v: str = _V) -> pd.DataFrame:
     return queries.monthly_trend(_client())
 
 
 @st.cache_data(ttl=1800)
-def _detail(as_of: str, _v: str = _V) -> pd.DataFrame:
+def _detail(as_of: str, v: str = _V) -> pd.DataFrame:
     return queries.door_detail(_client(), as_of)
 
 
