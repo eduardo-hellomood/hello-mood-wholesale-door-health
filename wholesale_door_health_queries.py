@@ -33,9 +33,8 @@ def door_health_summary(client: bigquery.Client, as_of: str) -> dict[str, int]:
         company_location_id,
         MAX(door_latest_order_dt) AS last_order_dt
       FROM {_TABLE}
-      WHERE location_type = 'Smoke & Vape'
+      WHERE company_location_id IS NOT NULL
         AND DATE(door_latest_order_dt) <= '{as_of}'
-        AND company_location_id IS NOT NULL
       GROUP BY 1
     )
     SELECT
@@ -59,13 +58,13 @@ def monthly_trend(client: bigquery.Client) -> pd.DataFrame:
       SELECT
         DATE_TRUNC(DATE(created_at_cst), MONTH) AS month_date,
         FORMAT_DATE('%b %Y', DATE_TRUNC(DATE(created_at_cst), MONTH)) AS month_label,
-        COUNT(DISTINCT disambiguated_location_name) AS active_doors,
+        COUNT(DISTINCT company_location_id) AS active_doors,
         COUNT(DISTINCT IF(
           DATE_TRUNC(DATE(door_first_order_created_at_cst), MONTH) = DATE_TRUNC(DATE(created_at_cst), MONTH),
-          disambiguated_location_name, NULL
+          company_location_id, NULL
         )) AS new_doors
       FROM {_TABLE}
-      WHERE location_type = 'Smoke & Vape'
+      WHERE company_location_id IS NOT NULL
         AND created_at_cst >= DATE_TRUNC(
               DATE_SUB(CURRENT_DATE('America/Chicago'), INTERVAL 5 MONTH), MONTH)
       GROUP BY 1, 2
@@ -98,9 +97,8 @@ def door_detail(client: bigquery.Client, as_of: str) -> pd.DataFrame:
           ORDER BY door_latest_order_dt DESC
         ) AS rn
       FROM {_TABLE}
-      WHERE location_type = 'Smoke & Vape'
+      WHERE company_location_id IS NOT NULL
         AND DATE(door_latest_order_dt) <= '{as_of}'
-        AND company_location_id IS NOT NULL
     ),
     door_spend AS (
       SELECT
@@ -108,8 +106,7 @@ def door_detail(client: bigquery.Client, as_of: str) -> pd.DataFrame:
         ROUND(SUM(IF(DATE(created_at_cst) BETWEEN DATE_SUB(DATE '{as_of}', INTERVAL 90 DAY) AND DATE '{as_of}', line_net_total, 0)), 2) AS spend_30d,
         ROUND(SUM(IF(DATE(created_at_cst) <= DATE '{as_of}', line_net_total, 0)), 2) AS spend_total
       FROM {_TABLE}
-      WHERE location_type = 'Smoke & Vape'
-        AND company_location_id IS NOT NULL
+      WHERE company_location_id IS NOT NULL
       GROUP BY 1
     )
     SELECT
