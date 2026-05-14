@@ -155,7 +155,7 @@ with chart_r:
                 "type": "pie",
                 "radius": ["42%", "68%"],
                 "center": ["38%", "50%"],
-                "label": {"show": True, "position": "outside", "formatter": "{b|{b}}\n{c|{c}}", "rich": {"b": {"fontSize": 10, "color": "#6b7280"}, "c": {"fontSize": 11, "fontWeight": "bold", "color": "#111827"}}},
+                "label": {"show": True, "position": "inside", "formatter": "{c}", "fontSize": 12, "fontWeight": "bold", "color": "#fff"},
                 "emphasis": {"itemStyle": {"shadowBlur": 8, "shadowColor": "rgba(0,0,0,0.15)"}},
                 "data": [
                     {"name": f"{s} ({['≤30d','31-60d','61-90d','90+d'][i]})",
