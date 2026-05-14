@@ -10,16 +10,16 @@ _TABLE = f"`{_PROJECT}.wholesale_dashboard_src.main`"
 
 
 def get_client() -> bigquery.Client:
-    try:
-        import streamlit as st
-        info = dict(st.secrets["gcp_service_account"])
-        from google.oauth2 import service_account
+    import streamlit as st
+    from google.oauth2 import service_account
+
+    if "gcp_service_account" in st.secrets:
         creds = service_account.Credentials.from_service_account_info(
-            info, scopes=["https://www.googleapis.com/auth/cloud-platform"]
+            dict(st.secrets["gcp_service_account"]),
+            scopes=["https://www.googleapis.com/auth/cloud-platform"],
         )
         return bigquery.Client(project=_PROJECT, credentials=creds)
-    except Exception:
-        pass
+
     key = "product-analytics-389809-47c798f65a92.json"
     if os.path.exists(key):
         os.environ.setdefault("GOOGLE_APPLICATION_CREDENTIALS", key)
