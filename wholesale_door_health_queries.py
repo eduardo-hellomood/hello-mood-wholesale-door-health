@@ -8,6 +8,11 @@ from google.cloud import bigquery
 _PROJECT = "product-analytics-389809"
 _TABLE = f"`{_PROJECT}.wholesale_dashboard_src.main`"
 
+_BASE_FILTER = """
+    company_location_id IS NOT NULL
+    AND financial_status != 'pending'
+"""
+
 
 def get_client() -> bigquery.Client:
     import streamlit as st
@@ -31,18 +36,17 @@ def door_health_summary(client: bigquery.Client, as_of: str) -> dict[str, int]:
     WITH latest AS (
       SELECT
         company_location_id,
-        MAX(door_latest_order_dt) AS last_order_dt
+        MAX(DATE(created_at_et)) AS last_order_date
       FROM {_TABLE}
-      WHERE company_location_id IS NOT NULL
-        AND financial_status != 'pending'
-        AND DATE(door_latest_order_dt) <= '{as_of}'
+      WHERE {_BASE_FILTER}
+        AND DATE(created_at_et) <= '{as_of}'
       GROUP BY 1
     )
     SELECT
       CASE
-        WHEN DATE_DIFF(DATE '{as_of}', DATE(last_order_dt), DAY) <= 30 THEN 'Active'
-        WHEN DATE_DIFF(DATE '{as_of}', DATE(last_order_dt), DAY) <= 60 THEN 'At Risk'
-        WHEN DATE_DIFF(DATE '{as_of}', DATE(last_order_dt), DAY) <= 90 THEN 'Churned'
+        WHEN DATE_DIFF(DATE '{as_of}', last_order_date, DAY) <= 30 THEN 'Active'
+        WHEN DATE_DIFF(DATE '{as_of}', last_order_date, DAY) <= 60 THEN 'At Risk'
+        WHEN DATE_DIFF(DATE '{as_of}', last_order_date, DAY) <= 90 THEN 'Churned'
         ELSE 'Lost'
       END AS status,
       COUNT(*) AS doors
@@ -65,8 +69,7 @@ def monthly_trend(client: bigquery.Client) -> pd.DataFrame:
           company_location_id, NULL
         )) AS new_doors
       FROM {_TABLE}
-      WHERE company_location_id IS NOT NULL
-        AND financial_status != 'pending'
+      WHERE {_BASE_FILTER}
         AND created_at_et >= DATE_TRUNC(
               DATE_SUB(CURRENT_DATE('America/New_York'), INTERVAL 5 MONTH), MONTH)
       GROUP BY 1, 2
@@ -88,21 +91,17 @@ def door_detail(client: bigquery.Client, as_of: str) -> pd.DataFrame:
     WITH door_latest AS (
       SELECT
         company_location_id,
-        company_name                AS company,
-        location_name               AS door_name,
-        location_address_city       AS city,
-        location_address_province   AS state,
-        imputed_owner_name          AS rep,
-        DATE(door_latest_order_dt)  AS last_order_date,
-        DATE_DIFF(DATE '{as_of}', DATE(door_latest_order_dt), DAY) AS days_since_order,
-        ROW_NUMBER() OVER (
-          PARTITION BY company_location_id
-          ORDER BY door_latest_order_dt DESC
-        ) AS rn
+        MAX(company_name)               AS company,
+        MAX(location_name)              AS door_name,
+        MAX(location_address_city)      AS city,
+        MAX(location_address_province)  AS state,
+        MAX(imputed_owner_name)         AS rep,
+        MAX(DATE(created_at_et))        AS last_order_date,
+        DATE_DIFF(DATE '{as_of}', MAX(DATE(created_at_et)), DAY) AS days_since_order
       FROM {_TABLE}
-      WHERE company_location_id IS NOT NULL
-        AND financial_status != 'pending'
-        AND DATE(door_latest_order_dt) <= '{as_of}'
+      WHERE {_BASE_FILTER}
+        AND DATE(created_at_et) <= '{as_of}'
+      GROUP BY company_location_id
     ),
     door_spend AS (
       SELECT
@@ -110,8 +109,7 @@ def door_detail(client: bigquery.Client, as_of: str) -> pd.DataFrame:
         ROUND(SUM(IF(DATE(created_at_et) BETWEEN DATE_SUB(DATE '{as_of}', INTERVAL 90 DAY) AND DATE '{as_of}', line_net_total, 0)), 2) AS spend_30d,
         ROUND(SUM(IF(DATE(created_at_et) <= DATE '{as_of}', line_net_total, 0)), 2) AS spend_total
       FROM {_TABLE}
-      WHERE company_location_id IS NOT NULL
-        AND financial_status != 'pending'
+      WHERE {_BASE_FILTER}
       GROUP BY 1
     )
     SELECT
@@ -132,7 +130,6 @@ def door_detail(client: bigquery.Client, as_of: str) -> pd.DataFrame:
       END AS status
     FROM door_latest d
     LEFT JOIN door_spend s USING (company_location_id)
-    WHERE d.rn = 1
     ORDER BY d.days_since_order
     """
     return client.query(q).to_dataframe()
