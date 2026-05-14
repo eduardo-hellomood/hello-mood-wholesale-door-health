@@ -30,11 +30,12 @@ def door_health_summary(client: bigquery.Client, as_of: str) -> dict[str, int]:
     q = f"""
     WITH latest AS (
       SELECT
-        disambiguated_location_name,
+        company_location_id,
         MAX(door_latest_order_dt) AS last_order_dt
       FROM {_TABLE}
       WHERE location_type = 'Smoke & Vape'
         AND DATE(door_latest_order_dt) <= '{as_of}'
+        AND company_location_id IS NOT NULL
       GROUP BY 1
     )
     SELECT
@@ -85,27 +86,30 @@ def door_detail(client: bigquery.Client, as_of: str) -> pd.DataFrame:
     q = f"""
     WITH door_latest AS (
       SELECT
-        disambiguated_location_name AS door_name,
+        company_location_id,
+        location_name               AS door_name,
         location_address_city       AS city,
         location_address_province   AS state,
         imputed_owner_name          AS rep,
         DATE(door_latest_order_dt)  AS last_order_date,
         DATE_DIFF(DATE '{as_of}', DATE(door_latest_order_dt), DAY) AS days_since_order,
         ROW_NUMBER() OVER (
-          PARTITION BY disambiguated_location_name
+          PARTITION BY company_location_id
           ORDER BY door_latest_order_dt DESC
         ) AS rn
       FROM {_TABLE}
       WHERE location_type = 'Smoke & Vape'
         AND DATE(door_latest_order_dt) <= '{as_of}'
+        AND company_location_id IS NOT NULL
     ),
     door_spend AS (
       SELECT
-        disambiguated_location_name,
+        company_location_id,
         ROUND(SUM(line_net_total), 2) AS monthly_spend
       FROM {_TABLE}
       WHERE location_type = 'Smoke & Vape'
         AND DATE(created_at_cst) BETWEEN DATE_SUB(DATE '{as_of}', INTERVAL 30 DAY) AND DATE '{as_of}'
+        AND company_location_id IS NOT NULL
       GROUP BY 1
     )
     SELECT
@@ -123,7 +127,7 @@ def door_detail(client: bigquery.Client, as_of: str) -> pd.DataFrame:
         ELSE 'Lost'
       END AS status
     FROM door_latest d
-    LEFT JOIN door_spend s ON d.door_name = s.disambiguated_location_name
+    LEFT JOIN door_spend s USING (company_location_id)
     WHERE d.rn = 1
     ORDER BY d.days_since_order
     """
