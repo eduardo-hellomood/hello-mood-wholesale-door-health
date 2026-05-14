@@ -48,7 +48,7 @@ def _client():
     return queries.get_client()
 
 
-_V = "v11"  # bump to bust cache after query changes
+_V = "v12"  # bump to bust cache after query changes
 
 @st.cache_data(ttl=1800)
 def _summary(as_of: str, v: str = _V) -> dict[str, int]:

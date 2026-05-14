@@ -60,7 +60,7 @@ def monthly_trend(client: bigquery.Client) -> pd.DataFrame:
         FORMAT_DATE('%b %Y', DATE_TRUNC(DATE(created_at_et), MONTH)) AS month_label,
         COUNT(DISTINCT company_location_id) AS active_doors,
         COUNT(DISTINCT IF(
-          DATE_TRUNC(DATE(door_first_order_created_at_et), MONTH) = DATE_TRUNC(DATE(created_at_et), MONTH),
+          DATE_TRUNC(DATE(DATETIME(door_first_order_created_at, 'America/New_York')), MONTH) = DATE_TRUNC(DATE(created_at_et), MONTH),
           company_location_id, NULL
         )) AS new_doors
       FROM {_TABLE}
