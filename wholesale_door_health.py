@@ -48,7 +48,7 @@ def _client():
     return queries.get_client()
 
 
-_V = "v3"  # bump to bust cache after query changes
+_V = "v4"  # bump to bust cache after query changes
 
 @st.cache_data(ttl=1800)
 def _summary(as_of: str, _v: str = _V) -> dict[str, int]:
@@ -233,7 +233,7 @@ display = pd.DataFrame({
     "Last Order":       pd.to_datetime(df["last_order_date"]),
     "Days Since Order": df["days_since_order"].astype(int),
     "Status":           df["status"],
-    "Spend (Last 30d)": df["spend_30d"],
+    "Spend (Last 90d)": df["spend_30d"],
     "Total Spend":      df["spend_total"],
 })
 
@@ -244,7 +244,7 @@ def _style(df: pd.DataFrame) -> pd.DataFrame:
     styles = pd.DataFrame("", index=df.index, columns=df.columns)
     styles["Status"]           = df["Status"].map(lambda s: f"background-color:{_STATUS_BG.get(s,'')};font-weight:600")
     styles["Days Since Order"] = df["Days Since Order"].map(lambda d: f"background-color:{_DAYS_BG(d)};font-weight:500")
-    styles["Spend (Last 30d)"] = df["Spend (Last 30d)"].map(lambda v: "color:#6b7280" if v == 0 else "")
+    styles["Spend (Last 90d)"] = df["Spend (Last 90d)"].map(lambda v: "color:#6b7280" if v == 0 else "")
     return styles
 
 st.dataframe(
@@ -253,7 +253,7 @@ st.dataframe(
     hide_index=True,
     column_config={
         "Last Order":       st.column_config.DateColumn("Last Order", format="MMM DD, YYYY"),
-        "Spend (Last 30d)": st.column_config.NumberColumn("Spend (Last 30d)", format="$%,.0f"),
+        "Spend (Last 90d)": st.column_config.NumberColumn("Spend (Last 90d)", format="$%,.0f"),
         "Total Spend":      st.column_config.NumberColumn("Total Spend", format="$%,.0f"),
         "Days Since Order": st.column_config.NumberColumn("Days Since Order"),
     },

@@ -105,7 +105,7 @@ def door_detail(client: bigquery.Client, as_of: str) -> pd.DataFrame:
     door_spend AS (
       SELECT
         company_location_id,
-        ROUND(SUM(IF(DATE(created_at_cst) BETWEEN DATE_SUB(DATE '{as_of}', INTERVAL 30 DAY) AND DATE '{as_of}', line_net_total, 0)), 2) AS spend_30d,
+        ROUND(SUM(IF(DATE(created_at_cst) BETWEEN DATE_SUB(DATE '{as_of}', INTERVAL 90 DAY) AND DATE '{as_of}', line_net_total, 0)), 2) AS spend_30d,
         ROUND(SUM(IF(DATE(created_at_cst) <= DATE '{as_of}', line_net_total, 0)), 2) AS spend_total
       FROM {_TABLE}
       WHERE location_type = 'Smoke & Vape'
