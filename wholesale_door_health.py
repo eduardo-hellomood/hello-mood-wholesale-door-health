@@ -160,7 +160,7 @@ with chart_l:
     )
 
 with chart_r:
-    st.markdown("**Door Health Distribution — As of Date**")
+    st.markdown("**Door Health Distribution**")
     st_echarts(
         options={
             "tooltip": {"trigger": "item", "formatter": "{b}: {c} ({d}%)"},
