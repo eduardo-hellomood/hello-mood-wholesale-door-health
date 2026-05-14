@@ -146,7 +146,7 @@ with chart_l:
             "yAxis": {"type": "value", "splitLine": {"lineStyle": {"color": "#f3f4f6"}}},
             "series": [
                 {"name": "Total Active", "type": "bar", "data": total,
-                 "itemStyle": {"color": "#bbf7d0"}, "barGap": "20%",
+                 "itemStyle": {"color": "#1e3a5f"}, "barGap": "20%",
                  "label": {"show": True, "position": "top", "fontSize": 11, "fontWeight": "bold", "color": "#374151"}},
                 {"name": "Existing Doors", "type": "bar", "stack": "composition",
                  "data": existing, "itemStyle": {"color": "#22c55e"},
