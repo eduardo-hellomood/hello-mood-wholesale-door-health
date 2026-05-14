@@ -111,6 +111,7 @@ def door_detail(client: bigquery.Client, as_of: str) -> pd.DataFrame:
       GROUP BY 1
     )
     SELECT
+      d.company,
       d.door_name,
       d.city,
       d.state,
