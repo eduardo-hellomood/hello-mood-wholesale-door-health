@@ -105,10 +105,10 @@ def door_detail(client: bigquery.Client, as_of: str) -> pd.DataFrame:
     door_spend AS (
       SELECT
         company_location_id,
-        ROUND(SUM(line_net_total), 2) AS monthly_spend
+        ROUND(SUM(IF(DATE(created_at_cst) BETWEEN DATE_SUB(DATE '{as_of}', INTERVAL 30 DAY) AND DATE '{as_of}', line_net_total, 0)), 2) AS spend_30d,
+        ROUND(SUM(IF(DATE(created_at_cst) <= DATE '{as_of}', line_net_total, 0)), 2) AS spend_total
       FROM {_TABLE}
       WHERE location_type = 'Smoke & Vape'
-        AND DATE(created_at_cst) BETWEEN DATE_SUB(DATE '{as_of}', INTERVAL 30 DAY) AND DATE '{as_of}'
         AND company_location_id IS NOT NULL
       GROUP BY 1
     )
@@ -119,7 +119,8 @@ def door_detail(client: bigquery.Client, as_of: str) -> pd.DataFrame:
       d.rep,
       d.last_order_date,
       d.days_since_order,
-      COALESCE(s.monthly_spend, 0) AS monthly_spend,
+      COALESCE(s.spend_30d, 0)    AS spend_30d,
+      COALESCE(s.spend_total, 0)  AS spend_total,
       CASE
         WHEN d.days_since_order <= 30 THEN 'Active'
         WHEN d.days_since_order <= 60 THEN 'At Risk'

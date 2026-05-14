@@ -227,7 +227,8 @@ display = pd.DataFrame({
     "Last Order":       pd.to_datetime(df["last_order_date"]),
     "Days Since Order": df["days_since_order"].astype(int),
     "Status":           df["status"],
-    "Monthly Spend":    df["monthly_spend"],
+    "Spend (Last 30d)": df["spend_30d"],
+    "Total Spend":      df["spend_total"],
 })
 
 _STATUS_BG = {"Active": "#dcfce7", "At Risk": "#fef3c7", "Churned": "#fee2e2", "Lost": "#f3f4f6"}
@@ -237,6 +238,7 @@ def _style(df: pd.DataFrame) -> pd.DataFrame:
     styles = pd.DataFrame("", index=df.index, columns=df.columns)
     styles["Status"]           = df["Status"].map(lambda s: f"background-color:{_STATUS_BG.get(s,'')};font-weight:600")
     styles["Days Since Order"] = df["Days Since Order"].map(lambda d: f"background-color:{_DAYS_BG(d)};font-weight:500")
+    styles["Spend (Last 30d)"] = df["Spend (Last 30d)"].map(lambda v: "color:#6b7280" if v == 0 else "")
     return styles
 
 st.dataframe(
@@ -245,7 +247,8 @@ st.dataframe(
     hide_index=True,
     column_config={
         "Last Order":       st.column_config.DateColumn("Last Order", format="MMM DD, YYYY"),
-        "Monthly Spend":    st.column_config.NumberColumn("Monthly Spend", format="$%,.0f"),
+        "Spend (Last 30d)": st.column_config.NumberColumn("Spend (Last 30d)", format="$%,.0f"),
+        "Total Spend":      st.column_config.NumberColumn("Total Spend", format="$%,.0f"),
         "Days Since Order": st.column_config.NumberColumn("Days Since Order"),
     },
     height=500,
