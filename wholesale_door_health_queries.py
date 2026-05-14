@@ -34,6 +34,7 @@ def door_health_summary(client: bigquery.Client, as_of: str) -> dict[str, int]:
         MAX(door_latest_order_dt) AS last_order_dt
       FROM {_TABLE}
       WHERE company_location_id IS NOT NULL
+        AND financial_status != 'pending'
         AND DATE(door_latest_order_dt) <= '{as_of}'
       GROUP BY 1
     )
@@ -65,6 +66,7 @@ def monthly_trend(client: bigquery.Client) -> pd.DataFrame:
         )) AS new_doors
       FROM {_TABLE}
       WHERE company_location_id IS NOT NULL
+        AND financial_status != 'pending'
         AND created_at_et >= DATE_TRUNC(
               DATE_SUB(CURRENT_DATE('America/New_York'), INTERVAL 5 MONTH), MONTH)
       GROUP BY 1, 2
@@ -99,6 +101,7 @@ def door_detail(client: bigquery.Client, as_of: str) -> pd.DataFrame:
         ) AS rn
       FROM {_TABLE}
       WHERE company_location_id IS NOT NULL
+        AND financial_status != 'pending'
         AND DATE(door_latest_order_dt) <= '{as_of}'
     ),
     door_spend AS (
@@ -108,6 +111,7 @@ def door_detail(client: bigquery.Client, as_of: str) -> pd.DataFrame:
         ROUND(SUM(IF(DATE(created_at_et) <= DATE '{as_of}', line_net_total, 0)), 2) AS spend_total
       FROM {_TABLE}
       WHERE company_location_id IS NOT NULL
+        AND financial_status != 'pending'
       GROUP BY 1
     )
     SELECT
