@@ -48,7 +48,7 @@ def _client():
     return queries.get_client()
 
 
-_V = "v14"  # bump to bust cache after query changes
+_V = "v15"  # bump to bust cache after query changes
 
 @st.cache_data(ttl=1800)
 def _summary(as_of: str, v: str = _V) -> dict[str, int]:
@@ -58,6 +58,11 @@ def _summary(as_of: str, v: str = _V) -> dict[str, int]:
 @st.cache_data(ttl=1800)
 def _trend(v: str = _V) -> pd.DataFrame:
     return queries.monthly_trend(_client())
+
+
+@st.cache_data(ttl=1800)
+def _weekly_trend(v: str = _V) -> pd.DataFrame:
+    return queries.weekly_trend(_client())
 
 
 @st.cache_data(ttl=1800)
@@ -126,14 +131,24 @@ st.markdown("<div style='margin-top:24px'></div>", unsafe_allow_html=True)
 # ─── Charts ───────────────────────────────────────────────────────────────────
 
 chart_l, chart_r = st.columns([6, 4])
-trend = _trend(_V)
 
 with chart_l:
-    st.markdown("**Monthly Door Counts — Total vs. Existing + New**")
+    title_col, toggle_col = st.columns([5, 1])
+    with toggle_col:
+        use_weekly = st.toggle("Weekly", value=False)
+    if use_weekly:
+        trend = _weekly_trend(_V)
+        x_labels = trend["week_label"].tolist()
+        chart_title = "**Weekly Door Counts — Total vs. Existing + New**"
+    else:
+        trend = _trend(_V)
+        x_labels = trend["month_label"].tolist()
+        chart_title = "**Monthly Door Counts — Total vs. Existing + New**"
+    with title_col:
+        st.markdown(chart_title)
     existing = (trend["active_doors"] - trend["new_doors"]).tolist()
     new_d    = trend["new_doors"].tolist()
     total    = trend["active_doors"].tolist()
-    months   = trend["month_label"].tolist()
     st_echarts(
         options={
             "tooltip": {"trigger": "axis"},
@@ -142,7 +157,7 @@ with chart_l:
                 "bottom": 0, "itemHeight": 10, "textStyle": {"fontSize": 11},
             },
             "grid": {"top": 10, "bottom": 50, "left": 50, "right": 50},
-            "xAxis": {"type": "category", "data": months, "axisLabel": {"fontSize": 11}},
+            "xAxis": {"type": "category", "data": x_labels, "axisLabel": {"fontSize": 11}},
             "yAxis": {"type": "value", "splitLine": {"lineStyle": {"color": "#f3f4f6"}}},
             "series": [
                 {"name": "Total Active", "type": "bar", "data": total,

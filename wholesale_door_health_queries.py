@@ -86,6 +86,35 @@ def monthly_trend(client: bigquery.Client) -> pd.DataFrame:
     return client.query(q).to_dataframe()
 
 
+def weekly_trend(client: bigquery.Client) -> pd.DataFrame:
+    q = f"""
+    WITH weekly AS (
+      SELECT
+        DATE_TRUNC(DATE(created_at_et), WEEK(MONDAY)) AS week_date,
+        FORMAT_DATE('%b %d', DATE_TRUNC(DATE(created_at_et), WEEK(MONDAY))) AS week_label,
+        COUNT(DISTINCT company_location_id) AS active_doors,
+        COUNT(DISTINCT IF(
+          DATE_TRUNC(DATE(DATETIME(door_first_order_created_at, 'America/New_York')), WEEK(MONDAY)) = DATE_TRUNC(DATE(created_at_et), WEEK(MONDAY)),
+          company_location_id, NULL
+        )) AS new_doors
+      FROM {_TABLE}
+      WHERE {_BASE_FILTER}
+        AND created_at_et >= DATE_TRUNC(
+              DATE_SUB(CURRENT_DATE('America/New_York'), INTERVAL 8 WEEK), WEEK(MONDAY))
+      GROUP BY 1, 2
+    )
+    SELECT
+      week_date,
+      week_label,
+      active_doors,
+      new_doors,
+      active_doors - LAG(active_doors) OVER (ORDER BY week_date) AS net_change
+    FROM weekly
+    ORDER BY week_date
+    """
+    return client.query(q).to_dataframe()
+
+
 def door_detail(client: bigquery.Client, as_of: str) -> pd.DataFrame:
     q = f"""
     WITH door_latest AS (
