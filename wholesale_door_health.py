@@ -48,7 +48,7 @@ def _client():
     return queries.get_client()
 
 
-_V = "v7"  # bump to bust cache after query changes
+_V = "v8"  # bump to bust cache after query changes
 
 @st.cache_data(ttl=1800)
 def _summary(as_of: str, v: str = _V) -> dict[str, int]:
@@ -101,7 +101,7 @@ st.markdown("<hr style='margin:8px 0 20px;border-color:#e5e7eb'>", unsafe_allow_
 
 # ─── KPI cards ────────────────────────────────────────────────────────────────
 
-summary = _summary(as_of)
+summary = _summary(as_of, _V)
 total = sum(summary.values()) or 1
 
 kpi_cols = st.columns(4)
@@ -126,7 +126,7 @@ st.markdown("<div style='margin-top:24px'></div>", unsafe_allow_html=True)
 # ─── Charts ───────────────────────────────────────────────────────────────────
 
 chart_l, chart_r = st.columns([6, 4])
-trend = _trend()
+trend = _trend(_V)
 
 with chart_l:
     st.markdown("**Monthly Door Counts — Total vs. Existing + New**")
@@ -188,7 +188,7 @@ with chart_r:
 
 # ─── Door detail table ────────────────────────────────────────────────────────
 
-detail = _detail(as_of)
+detail = _detail(as_of, _V)
 
 st.markdown(
     f"<div style='font-size:16px;font-weight:700;margin-bottom:10px'>"
