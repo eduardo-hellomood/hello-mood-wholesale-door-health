@@ -134,22 +134,26 @@ st.markdown("<div style='margin-top:24px'></div>", unsafe_allow_html=True)
 
 # ─── Charts ───────────────────────────────────────────────────────────────────
 
+# Title row — toggle sits inline right after the bar chart title
+_th1, _th2, _th3 = st.columns([4, 1, 5], gap="small")
+with _th2:
+    use_weekly = st.toggle("Weekly", value=False)
+
+period = "Weekly" if use_weekly else "Monthly"
+with _th1:
+    st.markdown(f"**{period} Door Counts — Total vs. Existing + New**")
+with _th3:
+    st.markdown("**Door Health Distribution**")
+
 chart_l, chart_r = st.columns([6, 4])
 
 with chart_l:
-    title_col, toggle_col = st.columns([3, 1], gap="small")
-    with toggle_col:
-        use_weekly = st.toggle("Weekly", value=False)
     if use_weekly:
         trend = _weekly_trend(_V)
         x_labels = trend["week_label"].tolist()
-        chart_title = "**Weekly Door Counts — Total vs. Existing + New**"
     else:
         trend = _trend(_V)
         x_labels = trend["month_label"].tolist()
-        chart_title = "**Monthly Door Counts — Total vs. Existing + New**"
-    with title_col:
-        st.markdown(chart_title)
     existing = (trend["active_doors"] - trend["new_doors"]).tolist()
     new_d    = trend["new_doors"].tolist()
     total    = trend["active_doors"].tolist()
@@ -179,7 +183,6 @@ with chart_l:
     )
 
 with chart_r:
-    st.markdown("**Door Health Distribution**")
     st_echarts(
         options={
             "tooltip": {"trigger": "item", "formatter": "{b}: {c} ({d}%)"},
