@@ -134,15 +134,13 @@ st.markdown("<div style='margin-top:24px'></div>", unsafe_allow_html=True)
 
 # ─── Charts ───────────────────────────────────────────────────────────────────
 
-# Title row — toggle sits inline right after the bar chart title
-_th1, _th2, _th3 = st.columns([4, 1, 5], gap="small")
-with _th2:
-    use_weekly = st.toggle("Weekly", value=False)
-
-period = "Weekly" if use_weekly else "Monthly"
+# Title row — toggle label IS the chart title, zero gap possible
+_th1, _th2 = st.columns([6, 4])
 with _th1:
-    st.markdown(f"**{period} Door Counts — Total vs. Existing + New**")
-with _th3:
+    period = "Weekly" if st.session_state.get("weekly_mode", False) else "Monthly"
+    st.toggle(f"{period} Door Counts — Total vs. Existing + New", key="weekly_mode")
+    use_weekly = st.session_state.weekly_mode
+with _th2:
     st.markdown("**Door Health Distribution**")
 
 chart_l, chart_r = st.columns([6, 4])
