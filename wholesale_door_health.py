@@ -137,7 +137,7 @@ st.markdown("<div style='margin-top:24px'></div>", unsafe_allow_html=True)
 chart_l, chart_r = st.columns([6, 4])
 
 with chart_l:
-    title_col, toggle_col, _ = st.columns([4, 1, 1])
+    title_col, toggle_col, _ = st.columns([3, 1, 2])
     with toggle_col:
         use_weekly = st.toggle("Weekly", value=False)
     if use_weekly:
