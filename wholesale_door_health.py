@@ -1,6 +1,9 @@
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime
+from zoneinfo import ZoneInfo
+
+_ET = ZoneInfo("America/New_York")
 
 import pandas as pd
 import streamlit as st
@@ -78,10 +81,11 @@ with st.sidebar:
         st.cache_data.clear()
         st.cache_resource.clear()
         st.rerun()
+    today_et = datetime.now(_ET).date()
     as_of_date = st.date_input(
         "As of date",
-        value=date.today(),
-        max_value=date.today(),
+        value=today_et,
+        max_value=today_et,
     )
     as_of = as_of_date.strftime("%Y-%m-%d")
 
